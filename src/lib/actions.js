@@ -1,0 +1,302 @@
+"use server";
+import prisma from "./prisma";
+import { revalidatePath } from "next/cache";
+
+export async function getVehiculoByPatente(patente) {
+  try {
+    if (!patente) return { success: false, error: "Patente requerida" };
+    const vehiculo = await prisma.vehiculo.findUnique({
+      where: { patente: patente.toUpperCase().trim() },
+      include: {
+        registros: { orderBy: { fecha: 'desc' }, take: 1 },
+      }
+    });
+    return { success: true, data: vehiculo };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getAllVehiculos() {
+  try {
+    const vehiculos = await prisma.vehiculo.findMany({
+      orderBy: { id: 'asc' }
+    });
+    return { success: true, data: vehiculos };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function createVehiculo(data) {
+  try {
+    const v = await prisma.vehiculo.create({
+      data: {
+        patente: data.patente.toUpperCase().trim(),
+        vtvVencimiento: data.vtvVencimiento ? new Date(data.vtvVencimiento) : null,
+        seguroVencimiento: data.seguroVencimiento ? new Date(data.seguroVencimiento) : null,
+        proximoServiceKm: data.proximoServiceKm ? parseInt(data.proximoServiceKm) : null,
+      }
+    });
+    revalidatePath("/admin");
+    return { success: true, data: v };
+  } catch(error) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function updateVehiculo(id, data) {
+  try {
+    const updateData = { ...data };
+    if (updateData.vtvVencimiento) updateData.vtvVencimiento = new Date(updateData.vtvVencimiento);
+    if (updateData.seguroVencimiento) updateData.seguroVencimiento = new Date(updateData.seguroVencimiento);
+    if (updateData.proximoServiceKm !== undefined) updateData.proximoServiceKm = parseInt(updateData.proximoServiceKm) || null;
+
+    const vehiculo = await prisma.vehiculo.update({
+      where: { id: parseInt(id) },
+      data: updateData
+    });
+    revalidatePath("/admin/vehicles/[id]", "page");
+    revalidatePath("/admin");
+    return { success: true, data: vehiculo };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getAllSucursales() {
+  try {
+    const sucursales = await prisma.sucursal.findMany({ orderBy: { nombre: 'asc' } });
+    return { success: true, data: sucursales };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function addSucursal(nombre, direccion) {
+  try {
+    const s = await prisma.sucursal.create({
+      data: { nombre, direccion }
+    });
+    revalidatePath("/admin/branches");
+    return { success: true, data: s };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function createRegistroDiario(data) {
+  try {
+    const registro = await prisma.registroDiario.create({
+      data: {
+        vehiculoId: parseInt(data.vehiculoId),
+        kmActual: parseInt(data.kmActual),
+        novedades: data.novedades || null,
+        nombreConductor: data.nombreConductor || null,
+        sucursales: {
+          connect: data.sucursalIds ? data.sucursalIds.map(id => ({ id: parseInt(id) })) : []
+        }
+      }
+    });
+    revalidatePath("/admin");
+    return { success: true, data: registro };
+  } catch (error) {
+    console.error("Error creating registro:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function addGasto(formData) {
+  try {
+    const vehiculoId = parseInt(formData.get("vehiculoId"));
+    const monto = parseFloat(formData.get("monto"));
+    const descripcion = formData.get("descripcion");
+    const tipo = formData.get("tipo");
+    const fecha = formData.get("fecha") ? new Date(formData.get("fecha")) : undefined;
+
+    const gasto = await prisma.gasto.create({
+      data: { vehiculoId, monto, descripcion, tipo, fecha }
+    });
+    
+    revalidatePath("/admin/vehicles/[id]/expenses", "page");
+    revalidatePath("/admin/summary");
+    return { success: true, data: gasto };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteGasto(id) {
+  try {
+    const gasto = await prisma.gasto.findUnique({ where: { id: parseInt(id) } });
+    await prisma.gasto.delete({ where: { id: parseInt(id) } });
+    if (gasto) revalidatePath(`/admin/vehicles/${gasto.vehiculoId}/expenses`);
+    revalidatePath("/admin/summary");
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getGastosByVehiculo(vehiculoId) {
+  try {
+    const gastos = await prisma.gasto.findMany({
+      where: { vehiculoId: parseInt(vehiculoId) },
+      orderBy: { fecha: 'desc' }
+    });
+    return { success: true, data: gastos };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteVehiculo(id) {
+  try {
+    await prisma.vehiculo.delete({ where: { id: parseInt(id) } });
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteSucursal(id) {
+  try {
+    await prisma.sucursal.delete({ where: { id: parseInt(id) } });
+    revalidatePath("/admin/branches");
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteRegistroDiario(id) {
+  try {
+    await prisma.registroDiario.delete({ where: { id: parseInt(id) } });
+    revalidatePath("/admin");
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getMonthlySummary(month, year) {
+  try {
+    const vehiculos = await prisma.vehiculo.findMany();
+    const allRegistros = await prisma.registroDiario.findMany({
+      include: { vehiculo: true, sucursales: true }
+    });
+    const allGastos = await prisma.gasto.findMany();
+
+    const summary = vehiculos.map(v => {
+      const records = allRegistros.filter(r => {
+        const d = new Date(r.fecha);
+        return r.vehiculoId === v.id && d.getMonth() === month && d.getFullYear() === year;
+      });
+
+      const expenses = allGastos.filter(g => {
+        const d = new Date(g.fecha);
+        return g.vehiculoId === v.id && d.getMonth() === month && d.getFullYear() === year;
+      });
+
+      let initialKm = 0;
+      let finalKm = 0;
+      if (records.length > 0) {
+        const sorted = [...records].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+        initialKm = sorted[0].kmActual;
+        finalKm = sorted[sorted.length - 1].kmActual;
+      }
+
+      return {
+        id: v.id,
+        patente: v.patente,
+        kmRecorridos: finalKm - initialKm > 0 ? finalKm - initialKm : 0,
+        totalGastos: expenses.reduce((sum, g) => sum + g.monto, 0),
+        cantidadRegistros: records.length,
+        novedades: records.filter(r => r.novedades).map(r => r.novedades)
+      };
+    });
+
+    return { success: true, data: summary };
+  } catch (error) {
+    console.error(error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getUltimosRegistros(limit = 10) {
+  try {
+    const registros = await prisma.registroDiario.findMany({
+      take: limit,
+      orderBy: { fecha: 'desc' },
+      include: {
+        vehiculo: true,
+        sucursales: true
+      }
+    });
+    return { success: true, data: registros };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getVehiculoById(id) {
+  try {
+    const vehiculo = await prisma.vehiculo.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        registros: { 
+          orderBy: { fecha: 'desc' }, 
+          include: { sucursales: true }
+        },
+      }
+    });
+    return { success: true, data: vehiculo };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+export async function loginAdmin(formData) {
+  const password = typeof formData === "string" ? formData : formData.get("password")?.toString();
+  
+  if (password === "admin123") {
+    const { cookies } = await import("next/headers");
+    (await cookies()).set("flotapp_admin_auth", "true", { 
+      httpOnly: true, 
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7 // 1 week
+    });
+    
+    // Redirect if it's a form submission (Zero-JS fallback)
+    if (typeof formData !== "string") {
+      const { redirect } = await import("next/navigation");
+      redirect("/admin");
+    }
+    
+    return { success: true };
+  }
+  return { success: false, error: "Contraseña incorrecta" };
+}
+
+export async function logoutAdmin() {
+  const { cookies } = await import("next/headers");
+  (await cookies()).delete("flotapp_admin_auth", { path: "/" });
+  const { redirect } = await import("next/navigation");
+  redirect("/");
+}
+
+export async function handleDriverEntry(formData) {
+  const patente = formData.get("patente")?.toString().toUpperCase().trim();
+  if (!patente) {
+    return { success: false, error: "La patente es requerida" };
+  }
+
+  const res = await getVehiculoByPatente(patente);
+  if (res.success && res.data) {
+    const { redirect } = await import("next/navigation");
+    redirect(`/driver/form?patente=${encodeURIComponent(patente)}`);
+  } else {
+    return { success: false, error: res.error || "Vehículo no encontrado" };
+  }
+}
