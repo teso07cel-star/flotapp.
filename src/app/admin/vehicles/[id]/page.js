@@ -143,7 +143,9 @@ export default async function VehicleDetails({ params }) {
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <div className="text-2xl font-black tracking-tighter text-blue-600 dark:text-blue-400">{r.kmActual.toLocaleString()} <span className="text-xs uppercase ml-1">km</span></div>
-                      <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1" suppressHydrationWarning>{new Date(r.fecha).toLocaleDateString()}</div>
+                      <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1" suppressHydrationWarning>
+                        {new Date(r.fecha).toLocaleDateString()} - {new Date(r.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
                     </div>
                     {r.nombreConductor && (
                       <div className="bg-white dark:bg-gray-900 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm border border-gray-100 dark:border-gray-800">

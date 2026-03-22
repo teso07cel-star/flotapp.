@@ -302,3 +302,55 @@ export async function handleDriverEntry(formData) {
     return { success: false, error: res.error || "Vehículo no encontrado" };
   }
 }
+
+export async function getDailyReport(dateString) {
+  try {
+    const targetDate = new Date(dateString);
+    const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
+
+    const registros = await prisma.registroDiario.findMany({
+      where: {
+        fecha: {
+          gte: startOfDay,
+          lte: endOfDay
+        }
+      },
+      include: {
+        vehiculo: true,
+        sucursales: true
+      },
+      orderBy: { fecha: 'asc' }
+    });
+
+    // Calcular estadísticas del día con lógica correcta
+    const vehicleData = {};
+    registros.forEach(r => {
+      if (!vehicleData[r.vehiculoId]) {
+        vehicleData[r.vehiculoId] = { min: r.kmActual, max: r.kmActual, visits: 0 };
+      }
+      vehicleData[r.vehiculoId].min = Math.min(vehicleData[r.vehiculoId].min, r.kmActual);
+      vehicleData[r.vehiculoId].max = Math.max(vehicleData[r.vehiculoId].max, r.kmActual);
+      vehicleData[r.vehiculoId].visits += (r.sucursales?.length || 0);
+    });
+
+    const totalKm = Object.values(vehicleData).reduce((sum, v) => sum + (v.max - v.min), 0);
+    const uniqueVehicles = Object.keys(vehicleData).length;
+    const totalVisits = Object.values(vehicleData).reduce((sum, v) => sum + v.visits, 0);
+
+    return { 
+      success: true, 
+      data: {
+        registros,
+        stats: {
+          totalKm,
+          uniqueVehicles,
+          totalVisits
+        }
+      } 
+    };
+  } catch (error) {
+    console.error("Error in getDailyReport:", error);
+    return { success: false, error: error.message };
+  }
+}

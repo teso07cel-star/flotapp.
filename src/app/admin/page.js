@@ -130,7 +130,7 @@ export default async function AdminDashboard() {
                   </span>
                   <div className="flex items-center gap-3">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter" suppressHydrationWarning>
-                      {new Date(r.fecha).toLocaleDateString()}
+                      {new Date(r.fecha).toLocaleDateString()} - {new Date(r.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                     <form action={deleteRegistroAction}>
                       <input type="hidden" name="id" value={r.id} />
