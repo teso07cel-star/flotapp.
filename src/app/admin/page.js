@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 import Link from "next/link";
 import { getAllVehiculos, getUltimosRegistros, deleteVehiculo, deleteRegistroDiario } from "@/lib/actions";
 import { revalidatePath } from "next/cache";
+import FormattedDate from "@/components/FormattedDate";
 
 async function deleteVehiculoAction(formData) {
   "use server";
@@ -155,9 +156,12 @@ export default async function AdminDashboard() {
                     {r.vehiculo.patente}
                   </span>
                   <div className="flex items-center gap-3">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter" suppressHydrationWarning>
-                      {new Date(r.fecha).toLocaleDateString()} - {new Date(r.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
+                    <div className="font-bold text-blue-600 dark:text-blue-400 text-sm">
+                        <FormattedDate date={r.fecha} showDate={false} />
+                    </div>
+                    <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">
+                        <FormattedDate date={r.fecha} />
+                    </div>
                     <form action={deleteRegistroAction}>
                       <input type="hidden" name="id" value={r.id} />
                       <button type="submit" className="text-gray-300 hover:text-red-500 transition-colors" title="Borrar Registro">
