@@ -70,25 +70,51 @@ export default async function AdminDashboard() {
                     </tr>
                   ) : vehiculos.map((v) => {
                     const hoy = new Date();
+                    const quinceDias = new Date(hoy.getTime() + (15 * 24 * 60 * 60 * 1000));
+                    
                     const vtvVencida = v.vtvVencimiento && new Date(v.vtvVencimiento) < hoy;
+                    const vtvProxima = v.vtvVencimiento && new Date(v.vtvVencimiento) <= quinceDias;
+                    
                     const seguroVencido = v.seguroVencimiento && new Date(v.seguroVencimiento) < hoy;
-                    const isAlert = vtvVencida || seguroVencido;
+                    const seguroProximo = v.seguroVencimiento && new Date(v.seguroVencimiento) <= quinceDias;
+
+                    const kmActual = v.registros?.[0]?.kmActual || 0;
+                    const kmParaService = v.proximoServiceKm ? (v.proximoServiceKm - kmActual) : null;
+                    
+                    const serviceCritico = kmParaService !== null && kmParaService <= 100;
+                    const serviceProximo = kmParaService !== null && kmParaService <= 500;
+
+                    const isRed = vtvVencida || seguroVencido || serviceCritico;
+                    const isAmber = !isRed && (vtvProxima || seguroProximo || serviceProximo);
 
                     return (
                       <tr key={v.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/20 transition-colors group">
                         <td className="p-5 pl-8">
                           <div className="font-mono font-black text-lg tracking-wider">{v.patente}</div>
+                          {kmActual > 0 && <div className="text-[10px] text-gray-400 font-bold uppercase">{kmActual.toLocaleString()} KM</div>}
                         </td>
                         <td className="p-5">
-                          {isAlert ? (
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase bg-red-100 dark:bg-red-500/10 text-red-800 dark:text-red-400 border border-red-200 dark:border-red-500/20 tracking-tighter">
-                              Advertencia
+                          {isRed ? (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase bg-red-100 dark:bg-red-500/10 text-red-800 dark:text-red-400 border border-red-200 dark:border-red-500/20 tracking-tighter animate-pulse">
+                              Crítico / Vencido
+                            </span>
+                          ) : isAmber ? (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase bg-amber-100 dark:bg-amber-500/10 text-amber-800 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 tracking-tighter">
+                              Atención Próxima
                             </span>
                           ) : (
                             <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-100 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 tracking-tighter">
                               Al Día
                             </span>
                           )}
+                          <div className="mt-1 flex flex-wrap gap-1">
+                             {vtvVencida && <span className="text-[8px] font-bold text-red-600 uppercase">VTV</span>}
+                             {!vtvVencida && vtvProxima && <span className="text-[8px] font-bold text-amber-600 uppercase">VTV</span>}
+                             {seguroVencido && <span className="text-[8px] font-bold text-red-600 uppercase">Seguro</span>}
+                             {!seguroVencido && seguroProximo && <span className="text-[8px] font-bold text-amber-600 uppercase">Seguro</span>}
+                             {serviceCritico && <span className="text-[8px] font-bold text-red-600 uppercase">Service</span>}
+                             {!serviceCritico && serviceProximo && <span className="text-[8px] font-bold text-amber-600 uppercase">Service</span>}
+                          </div>
                         </td>
                         <td className="p-5 pr-8 text-right">
                           <div className="flex items-center justify-end gap-2 text-xs">

@@ -20,7 +20,10 @@ export async function getVehiculoByPatente(patente) {
 export async function getAllVehiculos() {
   try {
     const vehiculos = await prisma.vehiculo.findMany({
-      orderBy: { id: 'asc' }
+      orderBy: { id: 'asc' },
+      include: {
+        registros: { orderBy: { fecha: 'desc' }, take: 1 }
+      }
     });
     return { success: true, data: vehiculos };
   } catch (error) {

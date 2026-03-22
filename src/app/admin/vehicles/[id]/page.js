@@ -67,6 +67,43 @@ export default async function VehicleDetails({ params }) {
         </div>
       </div>
 
+      {/* Alertas Detalladas */}
+      {(() => {
+        const hoy = new Date();
+        const quinceDias = new Date(hoy.getTime() + (15 * 24 * 60 * 60 * 1000));
+        const kmActual = vehiculo.registros?.[0]?.kmActual || 0;
+        const kmParaService = vehiculo.proximoServiceKm ? (vehiculo.proximoServiceKm - kmActual) : null;
+
+        const alerts = [];
+        if (vehiculo.vtvVencimiento && new Date(vehiculo.vtvVencimiento) < hoy) alerts.push({ type: 'red', msg: 'VTV Vencida' });
+        else if (vehiculo.vtvVencimiento && new Date(vehiculo.vtvVencimiento) <= quinceDias) alerts.push({ type: 'amber', msg: 'VTV por vencer (menos de 15 días)' });
+
+        if (vehiculo.seguroVencimiento && new Date(vehiculo.seguroVencimiento) < hoy) alerts.push({ type: 'red', msg: 'Seguro Vencido' });
+        else if (vehiculo.seguroVencimiento && new Date(vehiculo.seguroVencimiento) <= quinceDias) alerts.push({ type: 'amber', msg: 'Seguro por vencer (menos de 15 días)' });
+
+        if (kmParaService !== null) {
+          if (kmParaService <= 100) alerts.push({ type: 'red', msg: `SERVICE CRÍTICO: Faltan ${kmParaService} km` });
+          else if (kmParaService <= 500) alerts.push({ type: 'amber', msg: `Service Cercano: Faltan ${kmParaService} km` });
+        }
+
+        if (alerts.length === 0) return null;
+
+        return (
+          <div className="flex flex-col gap-3">
+            {alerts.map((a, i) => (
+              <div key={i} className={`flex items-center gap-4 p-4 rounded-2xl border ${
+                a.type === 'red' 
+                  ? 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20 text-red-800 dark:text-red-400 animate-pulse' 
+                  : 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20 text-amber-800 dark:text-amber-400'
+              }`}>
+                <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                <span className="text-sm font-black uppercase tracking-widest">{a.msg}</span>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* Columna Izquierda: Mantenimiento & Stats */}
