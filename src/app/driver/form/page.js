@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import Link from "next/link";
 import { getVehiculoByPatente, getAllSucursales, createRegistroDiario } from "@/lib/actions";
 import { redirect } from "next/navigation";

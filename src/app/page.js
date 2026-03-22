@@ -2,6 +2,7 @@
 
 import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+export const dynamic = 'force-dynamic';
 import Link from "next/link";
 import { getVehiculoByPatente } from "@/lib/actions";
 
