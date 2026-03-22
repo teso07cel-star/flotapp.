@@ -1,10 +1,13 @@
 import { defineConfig } from "prisma/config";
 
-// Para Prisma Postgres (el servicio de Prisma), la variable suele ser DATABASE_URL
-// o la que Vercel inyecte a través de la integración oficial.
+// FORZAMOS el uso de la variable de Vercel y BLOQUEAMOS a Supabase.
+// Si esta variable no esta, el error nos dira "POSTGRES_URL is required"
+// lo que significa que la base de datos no esta bien conectada en Vercel.
+const databaseUrl = process.env.POSTGRES_URL;
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   datasource: {
-    url: process.env.DATABASE_URL || process.env.POSTGRES_URL,
+    url: databaseUrl,
   },
 });
