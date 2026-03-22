@@ -1,19 +1,10 @@
 import { PrismaClient } from '@prisma/client'
 
-const databaseUrl = 
-  process.env.POSTGRES_URL || 
-  process.env.POSTGRES_PRISMA_URL || 
-  process.env.POSTGRES_PRISMA_DATABASE_URL ||
-  process.env.DATABASE_URL;
+// En Prisma 7 con la integración de Prisma Postgres, el cliente se encarga de todo.
+// Solo nos aseguramos de no crear mil instancias en desarrollo.
 
 const prismaClientSingleton = () => {
-  return new PrismaClient({
-    datasources: {
-      db: {
-        url: databaseUrl,
-      },
-    },
-  })
+  return new PrismaClient()
 }
 
 const globalForPrisma = globalThis
