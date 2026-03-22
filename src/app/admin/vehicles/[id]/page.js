@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getVehiculoById, updateVehiculo } from "@/lib/actions";
 import { revalidatePath } from "next/cache";
+import FormattedDate from "@/components/FormattedDate";
 
 async function saveAction(formData) {
   "use server";
@@ -179,7 +180,7 @@ export default async function VehicleDetails({ params }) {
                 <div key={r.id} className="p-6 bg-gray-50 dark:bg-gray-800/20 rounded-[2rem] border border-gray-100 dark:border-gray-800 group hover:border-blue-200 dark:hover:border-blue-900/30 transition-all">
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <div className="text-2xl font-black tracking-tighter text-blue-600 dark:text-blue-400">{r.kmActual.toLocaleString()} <span className="text-xs uppercase ml-1">km</span></div>
+                      <div className="text-2xl font-black tracking-tighter text-blue-600 dark:text-blue-400">{(r.kmActual || 0).toLocaleString()} <span className="text-xs uppercase ml-1">km</span></div>
                       <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">
                         <FormattedDate date={r.fecha} />
                       </div>
@@ -201,7 +202,7 @@ export default async function VehicleDetails({ params }) {
 
                   {r.novedades && (
                     <div className="bg-amber-50 dark:bg-amber-500/5 p-4 rounded-2xl border border-amber-100 dark:border-amber-500/10 text-sm font-medium italic text-amber-900 dark:text-amber-200">
-                      "{r.novedades}"
+                      &quot;{r.novedades}&quot;
                     </div>
                   )}
                 </div>

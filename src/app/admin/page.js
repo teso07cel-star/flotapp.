@@ -171,7 +171,7 @@ export default async function AdminDashboard() {
                   </div>
                 </div>
                 <div className="text-sm font-bold mb-2 flex items-baseline gap-1">
-                  {r.kmActual.toLocaleString()} <span className="text-[10px] text-gray-500 font-medium">KM</span>
+                  {(r.kmActual || 0).toLocaleString()} <span className="text-[10px] text-gray-500 font-medium">KM</span>
                 </div>
                 {r.nombreConductor && (
                   <div className="text-xs text-gray-400 font-bold uppercase tracking-tighter mb-2 flex items-center gap-1.5">

@@ -1,13 +1,27 @@
 import { getDailyReport } from "@/lib/actions";
 import Link from "next/link";
+import FormattedDate from "@/components/FormattedDate";
 
 export default async function DailyReport({ searchParams }) {
   const params = await searchParams;
+  // Usar la fecha actual en la zona horaria del servidor como fallback
+  // Nota: Para ser 100% precisos con el usuario, esto podría ser un Client Component,
+  // pero por ahora aseguramos que no crashee y use una fecha válida.
   const dateStr = params.date || new Date().toISOString().split('T')[0];
   
   const res = await getDailyReport(dateStr);
-  const data = res.success ? res.data : { registros: [], stats: { totalKm: 0, uniqueVehicles: 0, totalVisits: 0 } };
-  const { registros, stats } = data;
+  
+  if (!res.success) {
+      return (
+          <div className="p-10 border-2 border-dashed border-red-200 rounded-[2rem] text-center bg-red-50/30">
+              <h2 className="text-red-500 font-black uppercase mb-2">Error al cargar reporte</h2>
+              <p className="text-xs text-red-500/60 font-medium">{res.error}</p>
+          </div>
+      );
+  }
+
+  const { registros, stats } = res.data;
+  const branchEntries = Object.entries(stats.branchBreakdown || {});
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
@@ -40,7 +54,7 @@ export default async function DailyReport({ searchParams }) {
          </div>
          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-xl shadow-black/5">
             <p className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] mb-2 text-center md:text-left">Kilometraje Total</p>
-            <h2 className="text-4xl font-black tracking-tighter text-blue-600 dark:text-blue-400 text-center md:text-left">{stats.totalKm.toLocaleString()} <span className="text-xs">KM</span></h2>
+            <h2 className="text-4xl font-black tracking-tighter text-blue-600 dark:text-blue-400 text-center md:text-left">{(stats.totalKm || 0).toLocaleString()} <span className="text-xs">KM</span></h2>
          </div>
          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-6 shadow-xl shadow-black/5">
             <p className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] mb-2 text-center md:text-left">Sucursales Distintas</p>
@@ -49,11 +63,11 @@ export default async function DailyReport({ searchParams }) {
       </div>
 
       {/* Breakdown de sucursales */}
-      {Object.keys(stats.branchBreakdown || {}).length > 0 && (
+      {branchEntries.length > 0 && (
          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-[2.5rem] p-8 shadow-xl shadow-black/5">
             <h2 className="text-lg font-black uppercase tracking-tighter mb-6 border-b border-gray-100 dark:border-gray-800 pb-4">Visitas por Sucursal</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-               {Object.entries(stats.branchBreakdown).sort((a,b) => b[1] - a[1]).map(([name, count]) => (
+               {branchEntries.sort((a,b) => b[1] - a[1]).map(([name, count]) => (
                   <div key={name} className="flex flex-col items-center p-4 bg-gray-50 dark:bg-gray-800/40 rounded-2xl border border-gray-100 dark:border-gray-800">
                      <span className="text-[10px] font-black uppercase text-gray-400 tracking-widest text-center mb-1 truncate w-full">{name}</span>
                      <span className="text-2xl font-black text-blue-600 dark:text-blue-400">{count}</span>
@@ -90,7 +104,7 @@ export default async function DailyReport({ searchParams }) {
                     <div className="font-mono font-black text-sm tracking-widest bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-lg inline-block border border-gray-200 dark:border-gray-700">{r.vehiculo.patente}</div>
                   </td>
                   <td className="p-6">
-                    <div className="font-bold">{r.kmActual.toLocaleString()}</div>
+                    <div className="font-bold">{(r.kmActual || 0).toLocaleString()}</div>
                   </td>
                   <td className="p-6">
                     <div className="text-xs font-black uppercase tracking-tighter text-gray-600 dark:text-gray-400">{r.nombreConductor || "-"}</div>

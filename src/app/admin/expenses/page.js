@@ -46,7 +46,7 @@ export default async function GlobalExpenses() {
         </div>
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 px-6 py-4 rounded-3xl shadow-sm">
            <div className="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-1">Total del Mes</div>
-           <div className="text-2xl font-black text-blue-600 dark:text-blue-400">${totalMensual.toLocaleString()}</div>
+           <div className="text-2xl font-black text-blue-600 dark:text-blue-400">${(totalMensual || 0).toLocaleString()}</div>
         </div>
       </div>
 
@@ -79,7 +79,7 @@ export default async function GlobalExpenses() {
                         <div className="text-[10px] text-gray-400 mt-1 font-medium truncate max-w-[200px]">{g.descripcion}</div>
                       </td>
                       <td className="p-6 text-right font-black text-lg tracking-tight">
-                        ${g.monto.toLocaleString()}
+                        ${(g.monto || 0).toLocaleString()}
                       </td>
                       <td className="p-6 pr-10 text-right">
                          <form action={deleteGastoAction}>

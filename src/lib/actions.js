@@ -317,9 +317,24 @@ export async function handleDriverEntry(formData) {
 
 export async function getDailyReport(dateString) {
   try {
+    if (!dateString) {
+        dateString = new Date().toISOString().split('T')[0];
+    }
+    
+    //console.log("Fetching daily report for:", dateString);
     const targetDate = new Date(dateString);
-    const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
+    
+    // Check for invalid date
+    if (isNaN(targetDate.getTime())) {
+        return { success: false, error: "Fecha inválida: " + dateString };
+    }
+
+    // Usar una copia para evitar mutaciones que afecten cálculos inesperados
+    const startOfDay = new Date(targetDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(targetDate);
+    endOfDay.setHours(23, 59, 59, 999);
 
     const registros = await prisma.registroDiario.findMany({
       where: {
@@ -335,22 +350,28 @@ export async function getDailyReport(dateString) {
       orderBy: { fecha: 'asc' }
     });
 
-    // Calcular estadísticas del día con lógica correcta
+    // Calcular estadísticas del día con lógica robusta
     const vehicleData = {};
     const branchBreakdown = {};
     
     registros.forEach(r => {
+      if (!r.vehiculoId || !r.vehiculo) return;
+
+      const km = r.kmActual || 0;
+
       // Vehiculos
       if (!vehicleData[r.vehiculoId]) {
-        vehicleData[r.vehiculoId] = { min: r.kmActual, max: r.kmActual, visits: 0 };
+        vehicleData[r.vehiculoId] = { min: km, max: km, visits: 0 };
       }
-      vehicleData[r.vehiculoId].min = Math.min(vehicleData[r.vehiculoId].min, r.kmActual);
-      vehicleData[r.vehiculoId].max = Math.max(vehicleData[r.vehiculoId].max, r.kmActual);
+      vehicleData[r.vehiculoId].min = Math.min(vehicleData[r.vehiculoId].min, km);
+      vehicleData[r.vehiculoId].max = Math.max(vehicleData[r.vehiculoId].max, km);
       vehicleData[r.vehiculoId].visits += (r.sucursales?.length || 0);
 
       // Sucursales
       r.sucursales?.forEach(s => {
-        branchBreakdown[s.nombre] = (branchBreakdown[s.nombre] || 0) + 1;
+        if (s.nombre) {
+            branchBreakdown[s.nombre] = (branchBreakdown[s.nombre] || 0) + 1;
+        }
       });
     });
 
