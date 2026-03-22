@@ -1,8 +1,12 @@
-import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+import pg from 'pg'
 
 const prismaClientSingleton = () => {
-  return new PrismaClient()
+  const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+  const pool = new pg.Pool({ connectionString });
+  const adapter = new PrismaPg(pool);
+  return new PrismaClient({ adapter })
 }
 
 const globalForPrisma = globalThis
