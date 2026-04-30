@@ -100,8 +100,7 @@ export async function createRegistroDiario(data) {
 
       const v = await prisma.vehiculo.findUnique({ where: { id: vehiculoId } });
           if (v.codigoAutorizacion && v.codigoAutorizacion !== data.authCode) {
-                   return { success: false, error: "Cdigo de autorizacin invlido.
-                            return { success: false, error: "Cdigo de autorizacin invlido." };
+        return { success: false, error: "Cdigo de autorizacin invlido." };
           }
 
       const registro = await prisma.registroDiario.create({
